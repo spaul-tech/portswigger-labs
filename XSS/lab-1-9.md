@@ -129,3 +129,6 @@ Te: trailers
 
 ```
 ### As it's storing the input in a image file variable, we can exploit it by placing `"><img src=x onerror=alert(1)>` in the search bar, where it will create a new img tag , which will create the alert .
+
+<img width="1920" height="843" alt="alert-code" src="https://github.com/user-attachments/assets/b729df16-178d-4644-8a50-959cdd062f7f" />
+
