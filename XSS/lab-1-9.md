@@ -216,5 +216,6 @@ Te: trailers
                                         </script>
 ```
 
+<img width="1920" height="889" alt="lab-5" src="https://github.com/user-attachments/assets/2de04b34-972b-4cb5-8028-e881212d57df" />
 
 ### So `href` accepts `javascript:alert(document.cookie)` , when this payload is placed in `returnPath` , hit enter , then we've to click `Back` to execute our payload , previous labs ran automatically as no JS payload was needed .
